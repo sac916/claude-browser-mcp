@@ -77,18 +77,14 @@ services:
       - ./screenshots:/app/screenshots:rw
       - ./downloads:/app/downloads:rw
       - ./logs:/app/logs:rw
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw  # X11 forwarding for headed browser
     
     environment:
       - BROWSER_HEADLESS=false  # Enable headed mode for development
       - BROWSER_TIMEOUT=30000
       - MCP_LOG_LEVEL=DEBUG
       - PYTHONUNBUFFERED=1
-    
-    # Enable X11 forwarding for headed browser (Linux/macOS)
-    volumes:
-      - /tmp/.X11-unix:/tmp/.X11-unix:rw
-    environment:
-      - DISPLAY=${DISPLAY:-:0}
+      - DISPLAY=${DISPLAY:-:0}  # X11 display for headed browser
     
     init: true
     ipc: host
