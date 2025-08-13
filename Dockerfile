@@ -53,7 +53,7 @@ COPY --chown=mcpuser:mcpuser setup.py README.md ./
 
 # Install the application package
 USER root
-RUN pip install -e .
+RUN pip install -e . --break-system-packages
 USER mcpuser
 
 # Create entrypoint script for better process handling
