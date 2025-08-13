@@ -1,0 +1,45 @@
+# Development Dockerfile with additional debugging tools
+FROM mcr.microsoft.com/playwright:v1.54.0-noble as development
+
+# Install additional development tools
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    vim \
+    htop \
+    tree \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create user with same UID as host (helps with file permissions)
+ARG USER_ID=1000
+ARG GROUP_ID=1000
+RUN groupadd -g ${GROUP_ID} devuser && \
+    useradd -u ${USER_ID} -g ${GROUP_ID} -s /bin/bash devuser && \
+    mkdir -p /app /home/devuser && \
+    chown -R devuser:devuser /app /home/devuser
+
+# Install Python packages
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+# Install development dependencies
+RUN pip install \
+    pytest \
+    pytest-asyncio \
+    black \
+    mypy \
+    ipython \
+    debugpy
+
+# Set up development environment
+ENV PYTHONPATH="/app:${PYTHONPATH}"
+ENV PYTHONUNBUFFERED=1
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+
+USER devuser
+WORKDIR /app
+
+# Default command for development
+CMD ["python", "-m", "debugpy", "--listen", "0.0.0.0:5678", "--wait-for-client", "-m", "src.server"]

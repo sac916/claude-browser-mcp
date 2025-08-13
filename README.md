@@ -203,6 +203,54 @@ claude-browser-mcp/
 - **Resource limits** prevent excessive memory usage
 - **Timeout controls** prevent hanging operations
 
+## 🐳 Docker Deployment
+
+### Quick Start with Docker
+```bash
+# Build and run with Docker Compose
+docker-compose up browser-mcp
+
+# Or build manually
+./scripts/docker-build.sh
+./scripts/start-container.sh
+```
+
+### Production Deployment
+```bash
+# Build production image
+docker build -t browser-mcp:latest .
+
+# Run with optimal settings
+docker run -d \
+  --name browser-mcp \
+  --init --ipc=host --shm-size=1gb \
+  --memory=2g --cpus=1.0 \
+  -v $(pwd)/screenshots:/app/screenshots \
+  -v $(pwd)/downloads:/app/downloads \
+  browser-mcp:latest
+```
+
+### Development with Docker
+```bash
+# Development container with debugging
+docker-compose --profile dev up browser-mcp-dev
+
+# Access container
+docker exec -it claude-browser-mcp-dev /bin/bash
+```
+
+### Container Management
+```bash
+# Health check
+./scripts/health-check.sh
+
+# View logs
+docker logs -f claude-browser-mcp
+
+# Monitor resources
+docker stats claude-browser-mcp
+```
+
 ## 🚨 Error Handling
 
 The server provides detailed error responses with:

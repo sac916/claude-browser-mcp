@@ -1,0 +1,103 @@
+version: '3.8'
+
+services:
+  browser-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: claude-browser-mcp
+    
+    # Resource limits for optimal browser performance
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
+    
+    # Security configuration
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - SYS_ADMIN  # Required for browser sandbox
+    
+    # Essential for browser stability
+    init: true
+    ipc: host
+    shm_size: 1gb
+    
+    # Volume mounts for persistent data
+    volumes:
+      - ./screenshots:/app/screenshots:rw
+      - ./downloads:/app/downloads:rw
+      - ./logs:/app/logs:rw
+      - ./config:/app/config:ro
+      - /tmp:/app/tmp:rw
+    
+    # Environment variables
+    environment:
+      - BROWSER_HEADLESS=true
+      - BROWSER_TIMEOUT=30000
+      - BROWSER_TYPE=chromium
+      - MCP_LOG_LEVEL=INFO
+      - PYTHONUNBUFFERED=1
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Optional: expose port for HTTP mode (if implemented)
+    # ports:
+    #   - "${MCP_PORT:-8931}:8931"
+    
+    # Health check override for compose
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.path.append('/app'); from src.browser import BrowserManager; print('OK')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # Optional: Development service with additional tools
+  browser-mcp-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      target: development
+    container_name: claude-browser-mcp-dev
+    profiles:
+      - dev
+    
+    volumes:
+      - .:/app:rw
+      - ./screenshots:/app/screenshots:rw
+      - ./downloads:/app/downloads:rw
+      - ./logs:/app/logs:rw
+    
+    environment:
+      - BROWSER_HEADLESS=false  # Enable headed mode for development
+      - BROWSER_TIMEOUT=30000
+      - MCP_LOG_LEVEL=DEBUG
+      - PYTHONUNBUFFERED=1
+    
+    # Enable X11 forwarding for headed browser (Linux/macOS)
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    environment:
+      - DISPLAY=${DISPLAY:-:0}
+    
+    init: true
+    ipc: host
+    shm_size: 1gb
+
+volumes:
+  screenshots:
+    driver: local
+  downloads:
+    driver: local
+  logs:
+    driver: local
