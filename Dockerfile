@@ -14,6 +14,14 @@ RUN pip install --no-cache-dir --user -r requirements.txt
 # Production stage with official Playwright image
 FROM mcr.microsoft.com/playwright:v1.54.0-noble as production
 
+# Install Python and pip (Playwright image has Node.js but may not have Python)
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    python3-venv \
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -s /usr/bin/python3 /usr/bin/python
+
 # Create non-root user for security
 RUN groupadd -r mcpuser && useradd -r -g mcpuser mcpuser \
     && mkdir -p /app/screenshots /app/downloads /app/logs /app/tmp \
