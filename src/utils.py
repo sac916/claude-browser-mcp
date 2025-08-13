@@ -167,7 +167,7 @@ def extract_text_content(content: str, max_length: Optional[int] = None) -> str:
 def format_error_response(error_message: str, tool_name: str = None, 
                          arguments: Dict[str, Any] = None) -> Dict[str, Any]:
     """
-    Format a standardized error response.
+    Format a standardized MCP-compliant error response.
     
     Args:
         error_message: Error message to include
@@ -175,21 +175,24 @@ def format_error_response(error_message: str, tool_name: str = None,
         arguments: Arguments that were passed to the tool
         
     Returns:
-        Formatted error response dictionary
+        MCP-compliant error response dictionary
     """
-    response = {
-        "success": False,
-        "error": error_message,
-        "timestamp": "error_time"  # In real implementation, use actual timestamp
-    }
-    
+    # Format error message for tool context
     if tool_name:
-        response["tool"] = tool_name
-        
-    if arguments:
-        response["arguments"] = arguments
-        
-    return response
+        formatted_message = f"Error in tool '{tool_name}': {error_message}"
+    else:
+        formatted_message = error_message
+    
+    # Return MCP-compliant error response format
+    return {
+        "content": [
+            {
+                "type": "text",
+                "text": formatted_message
+            }
+        ],
+        "isError": True
+    }
 
 
 def encode_image_base64(image_bytes: bytes, format: str = "PNG") -> str:

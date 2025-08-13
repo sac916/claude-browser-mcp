@@ -1,0 +1,1 @@
+docker run --init --ipc=host --shm-size=1gb -v /home/gmitch/claude-browser-mcp/screenshots:/app/screenshots -v /home/gmitch/claude-browser-mcp/downloads:/app/downloads --name=browser-mcp-instance --detach=false --rm=false claude-browser-mcp-browser-mcp python -m src.server

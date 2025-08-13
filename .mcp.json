@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "browser-automation": {
+      "command": "python3",
+      "args": ["/home/gmitch/claude-browser-mcp/start_mcp_server.py"],
+      "env": {
+        "BROWSER_HEADLESS": "true",
+        "BROWSER_TIMEOUT": "30"
+      }
+    }
+  }
+}

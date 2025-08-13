@@ -36,10 +36,12 @@ from .browser import BrowserManager
 from .actions import BrowserActions
 from .utils import sanitize_html, format_error_response
 
-# Configure logging
+# Configure logging to stderr only (stdout must remain clean for JSON-RPC)
+import sys
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    stream=sys.stderr
 )
 logger = logging.getLogger(__name__)
 
@@ -242,12 +244,22 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> Sequence[typ
         else:
             raise ValueError(f"Unknown tool: {name}")
             
-        # Format successful response
-        return [types.TextContent(type="text", text=json.dumps(result, indent=2))]
+        # Format successful response in MCP-compliant format
+        response_data = {
+            "content": [
+                {
+                    "type": "text", 
+                    "text": json.dumps(result, indent=2)
+                }
+            ],
+            "isError": False
+        }
+        return [types.TextContent(type="text", text=json.dumps(response_data, indent=2))]
         
     except Exception as e:
         logger.error(f"Error executing tool {name}: {str(e)}")
         error_response = format_error_response(str(e), name, arguments)
+        # Return error response with isError flag
         return [types.TextContent(type="text", text=json.dumps(error_response, indent=2))]
 
 
@@ -289,29 +301,27 @@ def main():
     graceful shutdown with browser cleanup.
     """
     async def run_server():
-        # Setup initialization options
-        init_options = InitializationOptions(
-            server_name="browser-automation",
-            server_version="0.1.0",
-            capabilities=app.get_capabilities(
-                notification_options=NotificationOptions(),
-                experimental_capabilities={}
-            )
-        )
-        
         try:
-            # Run the server
+            # Run the server with proper stdio handling
             async with mcp.server.stdio.stdio_server() as (read_stream, write_stream):
                 logger.info("Starting browser MCP server...")
                 await app.run(
                     read_stream,
-                    write_stream, 
-                    init_options
+                    write_stream,
+                    InitializationOptions(
+                        server_name="browser-automation",
+                        server_version="0.1.0",
+                        capabilities=app.get_capabilities(
+                            notification_options=NotificationOptions(),
+                            experimental_capabilities={}
+                        )
+                    )
                 )
         except KeyboardInterrupt:
             logger.info("Server interrupted by user")
         except Exception as e:
             logger.error(f"Server error: {str(e)}")
+            # Don't re-raise to prevent server crash
         finally:
             await cleanup()
             logger.info("Server shutdown complete")
